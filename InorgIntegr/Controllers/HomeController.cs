@@ -23,6 +23,17 @@ namespace InorgIntegr.Controllers
             return View();
         }
 
+        [HttpPost]
+        public ActionResult Search(SearchRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                Console.Write(request.Formula);
+            }
+
+            return View("FindResult", request);
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

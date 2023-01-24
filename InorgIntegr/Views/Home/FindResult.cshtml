@@ -1,0 +1,18 @@
+﻿@model SearchRequest
+
+@{
+    ViewData["Title"] = "FindResult";
+    var pubChemInfoResponse = await SearchModel.Find(Model);
+}
+
+<h3>Результат поиска:</h3>
+
+@if (pubChemInfoResponse.Error != null)
+{   
+    <p>@pubChemInfoResponse.Error</p>
+}
+else
+{
+    <img src=@pubChemInfoResponse.ImageLink />
+    <p>@pubChemInfoResponse.Description</p>
+}
