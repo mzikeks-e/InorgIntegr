@@ -2,13 +2,10 @@
 {
     public class PubChemInfoResponse
     {
-        public string Description { get; set; } = null;
+        public IEnumerable<string> Descriptions { get; set; } = null;
+        public IDictionary<string, string> Ids { get; set; } = null;
+        public IDictionary<string, string> Properties { get; set; } = null;
         public string ImageLink { get; set; } = null;
         public string Error { get; set; } = null;
-
-        public override string ToString()
-        {
-            return Description;
-        }
     }
 }

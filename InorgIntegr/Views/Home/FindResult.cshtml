@@ -2,7 +2,8 @@
 
 @{
     ViewData["Title"] = "FindResult";
-    var pubChemInfoResponse = await SearchModel.Find(Model);
+    var pubChemInfoResponse = await SearchModel.FindPubChem(Model);
+    var FDBInfoResponse = await SearchModel.FindFoodb(Model);
 }
 
 <h3>Результат поиска:</h3>
@@ -11,8 +12,51 @@
 {   
     <p>@pubChemInfoResponse.Error</p>
 }
-else
+@if (FDBInfoResponse.Error != null)
+{   
+    <p>@FDBInfoResponse.Error</p>
+}
+@if  (pubChemInfoResponse.Error == null)
 {
     <img src=@pubChemInfoResponse.ImageLink />
-    <p>@pubChemInfoResponse.Description</p>
+    @foreach (var descr in pubChemInfoResponse.Descriptions)
+    {
+        <p>@descr</p>
+    }
+
+    @foreach (var key in pubChemInfoResponse.Ids.Keys)
+    {
+        <p>
+            <h5>@key:</h5>
+            <div>@pubChemInfoResponse.Ids[key]</div>
+        </p>
+    }
+
+    @foreach (var key in pubChemInfoResponse.Properties.Keys)
+    {
+        <div>
+            <div>@key: @pubChemInfoResponse.Properties[key]</div>
+        </div>
+    }
+}
+
+@if  (FDBInfoResponse.Error == null)
+{
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>NameSci</th>
+        <th>NcbiId</th>
+      </tr>
+
+    @foreach (var food in FDBInfoResponse.Foods)
+    {
+      <tr>
+        <td>@food.Name</td>
+        <td>@food.NameSci</td>
+        <td>@food.NcbiId</td>
+      </tr>
+    }
+
+    </table>
 }

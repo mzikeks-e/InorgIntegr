@@ -5,7 +5,11 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace InorgIntegr.Models
 {
@@ -16,8 +20,12 @@ namespace InorgIntegr.Models
         class PubChemGettingCidException : Exception { }
 
         class PubChemGettingInfoException : Exception { }
+        
+        class GettingFDBException : Exception { }
+        
+        class FDBGettingInfoException : Exception { }
 
-        public static async Task<PubChemInfoResponse> Find(SearchRequest searchRequest)
+        public static async Task<PubChemInfoResponse> FindPubChem(SearchRequest searchRequest)
         {
             try
             {
@@ -36,7 +44,25 @@ namespace InorgIntegr.Models
                 return new PubChemInfoResponse { Error = "непредвиденная ошибка" };
             }
         }
-
+        public static async Task<FoodbDBResponse> FindFoodb(SearchRequest searchRequest)
+        {
+            try
+            {
+                return await GetInfoByFDBAsync(await GetFDBByFormulaAsync(searchRequest.Formula));
+            }
+            catch (FDBGettingInfoException)
+            {
+                return new FoodbDBResponse { Error = "Ошибка при получении информации о веществе на FoodDb" };
+            }
+            catch (GettingFDBException)
+            {
+                return new FoodbDBResponse { Error = "Ошибка при получении FDB введенного вещества на FoodDb" };
+            }
+            catch
+            {
+                return new FoodbDBResponse { Error = "непредвиденная ошибка" };
+            }
+        }
         public static async Task<int> GetCidByFormulaAsync(string formula)
         {
             try
@@ -58,6 +84,24 @@ namespace InorgIntegr.Models
             }
         }
 
+        public static async Task<string> GetFDBByFormulaAsync(string formula)
+        {
+            try
+            {
+
+                HttpResponseMessage response = await client.GetAsync(
+                    $"https://foodb.ca/unearth/q?utf8=%E2%9C%93&query={formula}&searcher=compounds&button=");
+                response.EnsureSuccessStatusCode();
+                string html = await response.Content.ReadAsStringAsync();
+                    
+                return Regex.Match(html, "<a href=\"/compounds/([^\"]+)\">").Groups[1].Value;
+            }
+            catch
+            {
+                throw new GettingFDBException();
+            }
+        }
+
         public static async Task<PubChemInfoResponse> GetInfoByCidAsync(int cid)
         {
             try
@@ -70,20 +114,43 @@ namespace InorgIntegr.Models
                 
                 dynamic obj = JsonConvert.DeserializeObject(json);
                 var sections = (JArray)obj.Record.Section;
-                var description = sections.Children<JObject>()
+                var descriptions = sections.Children<JObject>()
                     .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
                     ["Section"].Children<JObject>()
                     .First(section => section["Description"] != null && section["Description"].ToString() == "Summary Information")
                     ["Information"].Children<JObject>()
-                    .First()
-                    ["Value"]
-                    ["StringWithMarkup"]
-                    .First()
-                    ["String"];
+                    .Select(s => s["Value"]["StringWithMarkup"].First()["String"].ToString())
+                    .ToList();
+
+                var identifiers = sections.Children<JObject>()
+                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
+                    ["Section"].Children<JObject>()
+                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Descriptors")
+                    ["Section"].Children<JObject>()
+                    .ToDictionary(k => k["TOCHeading"].ToString(),
+                        v => v["Information"].First()["Value"]["StringWithMarkup"].First()["String"].ToString());
+
+                var properties = sections.Children<JObject>()
+                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Chemical and Physical Properties")
+                    ["Section"].Children<JObject>()
+                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Properties")
+                    ["Section"].Children<JObject>()
+                    .ToDictionary(k => k["TOCHeading"].ToString(),
+                        v =>
+                        {
+                            var info = v["Information"].First()["Value"];
+                            var answ = string.Empty;
+                            
+                            answ = info["StringWithMarkup"]?.First()?["String"]?.ToString() ?? info["Number"]?.ToString();
+
+                            return answ ?? string.Empty;
+                        });
 
                 return new PubChemInfoResponse
                 {
-                    Description = description.ToString(),
+                    Descriptions = descriptions,
+                    Ids = identifiers,
+                    Properties = properties,
                     ImageLink = $"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG"
                 };
             }
@@ -91,6 +158,44 @@ namespace InorgIntegr.Models
             catch
             {
                 throw new PubChemGettingInfoException();
+            }
+        }
+
+        public static async Task<FoodbDBResponse> GetInfoByFDBAsync(string fdb)
+        {
+            try
+            {
+                var httpRequestMessage = new HttpRequestMessage
+                {
+                    RequestUri = new Uri($"https://foodb.ca/compounds/{fdb}"),
+                    Headers = {
+                    { HttpRequestHeader.Accept.ToString(), "application/xml" },
+                    }
+                };
+
+                var response = client.SendAsync(httpRequestMessage).Result;
+                string xml = await response.Content.ReadAsStringAsync();
+
+
+                var obj = XDocument.Parse(xml);
+                var foodsXml = obj.XPathSelectElements("/compound/foods/food");
+
+                var foods = foodsXml.Select(f => new Food{
+                    Name = f.Element("name").Value,
+                    NameSci = f.Element("name_scientific").Value,
+                    NcbiId = f.Element("ncbi_taxonomy_id").Value
+                });
+
+
+                return new FoodbDBResponse
+                {
+                    Foods = foods
+                };
+            }
+
+            catch
+            {
+                throw new FDBGettingInfoException();
             }
         }
     }
