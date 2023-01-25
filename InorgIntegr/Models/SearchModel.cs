@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -43,6 +44,7 @@ namespace InorgIntegr.Models
             {
                 return new PubChemInfoResponse { Error = "непредвиденная ошибка" };
             }
+           
         }
         public static async Task<FoodbDBResponse> FindFoodb(SearchRequest searchRequest)
         {
@@ -115,42 +117,42 @@ namespace InorgIntegr.Models
                 dynamic obj = JsonConvert.DeserializeObject(json);
                 var sections = (JArray)obj.Record.Section;
                 var descriptions = sections.Children<JObject>()
-                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
-                    ["Section"].Children<JObject>()
-                    .First(section => section["Description"] != null && section["Description"].ToString() == "Summary Information")
-                    ["Information"].Children<JObject>()
+                    .FirstOrDefault(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
+                    ?["Section"]?.Children<JObject>()
+                    .FirstOrDefault(section => section["Description"] != null && section["Description"].ToString() == "Summary Information")
+                    ?["Information"]?.Children<JObject>()
                     .Select(s => s["Value"]["StringWithMarkup"].First()["String"].ToString())
                     .ToList();
 
                 var identifiers = sections.Children<JObject>()
-                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
-                    ["Section"].Children<JObject>()
-                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Descriptors")
-                    ["Section"].Children<JObject>()
+                    .FirstOrDefault(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Names and Identifiers")
+                    ?["Section"]?.Children<JObject>()
+                    .FirstOrDefault(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Descriptors")
+                    ?["Section"]?.Children<JObject>()
                     .ToDictionary(k => k["TOCHeading"].ToString(),
                         v => v["Information"].First()["Value"]["StringWithMarkup"].First()["String"].ToString());
 
                 var properties = sections.Children<JObject>()
-                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Chemical and Physical Properties")
-                    ["Section"].Children<JObject>()
-                    .First(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Properties")
-                    ["Section"].Children<JObject>()
+                    .FirstOrDefault(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Chemical and Physical Properties")
+                    ?["Section"]?.Children<JObject>()
+                    .FirstOrDefault(section => section["TOCHeading"] != null && section["TOCHeading"].ToString() == "Computed Properties")
+                    ?["Section"]?.Children<JObject>()
                     .ToDictionary(k => k["TOCHeading"].ToString(),
                         v =>
                         {
-                            var info = v["Information"].First()["Value"];
+                            var info = v?["Information"].FirstOrDefault()?["Value"];
                             var answ = string.Empty;
                             
-                            answ = info["StringWithMarkup"]?.First()?["String"]?.ToString() ?? info["Number"]?.ToString();
+                            answ = info?["StringWithMarkup"]?.FirstOrDefault()?["String"]?.ToString() ?? info["Number"]?.ToString();
 
                             return answ ?? string.Empty;
                         });
 
                 return new PubChemInfoResponse
                 {
-                    Descriptions = descriptions,
-                    Ids = identifiers,
-                    Properties = properties,
+                    Descriptions = descriptions ?? Enumerable.Empty<string>(),
+                    Ids = identifiers ?? new Dictionary<string, string>(),
+                    Properties = properties ?? new Dictionary<string, string>(),
                     ImageLink = $"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG"
                 };
             }
@@ -189,7 +191,7 @@ namespace InorgIntegr.Models
 
                 return new FoodbDBResponse
                 {
-                    Foods = foods
+                    Foods = foods ?? Enumerable.Empty<Food>()
                 };
             }
 
