@@ -210,5 +210,10 @@ namespace InorgIntegr.Models
                 throw new FDBGettingInfoException();
             }
         }
+
+        public static async Task<object> BuildJsonFromResponses(SearchRequest request)
+        {
+            return new { A = "a" };
+        }
     }
 }

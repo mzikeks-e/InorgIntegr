@@ -24,10 +24,19 @@ namespace InorgIntegr.Controllers
         }
 
         [HttpPost]
-        public ActionResult Search(SearchRequest request)
+        public async Task<IActionResult> Search(SearchRequest request)
         {
             if (ModelState.IsValid)
                 Console.Write(request.Formula);
+
+            
+            if (request.ExportAs == ExportType.ToJson)
+            {
+                Response.Headers.Add("content-disposition", "attachment;filename=DownloadSample.json");
+                Response.ContentType = "application/octectstream";
+
+                return Json(await SearchModel.BuildJsonFromResponses(request));
+            }
 
             return View("FindResult", request);
         }
