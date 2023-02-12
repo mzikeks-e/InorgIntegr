@@ -11,6 +11,8 @@
     {
         public string Formula { get; set; }
 
+        public string Filename { get; set; }
+
         public ExportType ExportAs { get; set; }
 
         public bool IsPubChem { get; set; }

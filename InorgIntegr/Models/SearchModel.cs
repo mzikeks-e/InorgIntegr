@@ -192,7 +192,7 @@ namespace InorgIntegr.Models
                 var obj = XDocument.Parse(xml);
                 var foodsXml = obj.XPathSelectElements("/compound/foods/food");
 
-                var foods = foodsXml.Select(f => new Food{
+                var foods = foodsXml.Select(f => new Food {
                     Name = f.Element("name").Value,
                     NameSci = f.Element("name_scientific").Value,
                     NcbiId = f.Element("ncbi_taxonomy_id").Value
@@ -211,9 +211,31 @@ namespace InorgIntegr.Models
             }
         }
 
+        public static async Task<(PubChemInfoResponse, FoodbDBResponse, FoodbDBResponse)> GetResponses(SearchRequest request)
+        {
+            var pubChemInfoResponseTask = request.IsPubChem ? FindPubChem(request) : (Task<PubChemInfoResponse>)Task.CompletedTask;
+            var fdbInfoResponseTask = request.IsFoodB ? FindFoodb(request) : (Task<FoodbDBResponse>)Task.CompletedTask;
+            var dBInfoResponseTask = request.IsDB ? FindDb(request) : (Task<FoodbDBResponse>)Task.CompletedTask;
+
+            await Task.WhenAll(pubChemInfoResponseTask, fdbInfoResponseTask, dBInfoResponseTask);
+
+            var pubChemInfoResponse = pubChemInfoResponseTask.Result;
+            var fdbInfoResponse = fdbInfoResponseTask.Result;
+            var dBInfoResponse = dBInfoResponseTask.Result;
+
+            return (pubChemInfoResponse, fdbInfoResponse, dBInfoResponse); 
+        }
+
         public static async Task<object> BuildJsonFromResponses(SearchRequest request)
         {
-            return new { A = "a" };
+            var (pubChemInfoResponse, fdbInfoResponse, dBInfoResponse) = await GetResponses(request);
+
+            return new
+            {
+                PubChemInfo = pubChemInfoResponse,
+                FdbInfo = fdbInfoResponse,
+                DbInfo = dBInfoResponse,
+            };
         }
     }
 }

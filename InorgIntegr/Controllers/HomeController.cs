@@ -32,7 +32,8 @@ namespace InorgIntegr.Controllers
             
             if (request.ExportAs == ExportType.ToJson)
             {
-                Response.Headers.Add("content-disposition", "attachment;filename=DownloadSample.json");
+                Response.Headers.Add("content-disposition",
+                    $"attachment;filename={Path.ChangeExtension(request.Filename, null)}.json");
                 Response.ContentType = "application/octectstream";
 
                 return Json(await SearchModel.BuildJsonFromResponses(request));

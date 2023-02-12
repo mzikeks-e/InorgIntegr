@@ -7,7 +7,7 @@
 
     @using (Html.BeginForm("Search", "Home", FormMethod.Post))
     {
-        <p>
+        <p class="answerFormat">
             <b>Формат ответа:</b>
             <br/>
 
@@ -16,11 +16,16 @@
             <br/>
 
             <label>Сохранить html</label>
-            @Html.RadioButton("ExportAs", ExportType.ToHtml)
+            @Html.RadioButton("ExportAs", ExportType.ToHtml, new { @class = "requeiredFile"})
             <br/>
             
             <label>Сохранить json</label>
-            @Html.RadioButton("ExportAs", ExportType.ToJson)
+            @Html.RadioButton("ExportAs", ExportType.ToJson, new { @class = "requeiredFile"})
+        </p>
+
+        <p id="choose_filename">
+            <label id="choose_filename_label" hidden="hidden">Введите имя результирующего файла:</label><br />
+            @Html.TextBox("Filename", "output", new { required = string.Empty, hidden="hidden"})
         </p>
 
         <p id="choose_db">
@@ -43,7 +48,6 @@
             <label>Введите формулу химического вещества</label><br />
     
             @Html.TextBox("Formula", string.Empty, new { required = string.Empty })
-
         </p>
 
         <p>
@@ -56,11 +60,32 @@
     var checkboxes = document.querySelectorAll('#choose_db input[type="checkbox"][required]');
     for (let checkbox of checkboxes) {
        checkbox.addEventListener('change', (event) => {
-          // console.log(event.currentTarget.checked));
           var checkedAny = Array.prototype.slice.call(checkboxes).some(c => c.checked);
-          for (let c of checkboxes) {
+          for (let c of checkboxes)
              c.required = !checkedAny;
-          }
        })
     }
+
+    var inputFilenameTextBox = document.querySelectorAll('#Filename')[0];
+    var inputFilenameLabel = document.querySelectorAll('#choose_filename_label')[0];
+
+    var exportFileRadioButtons = document.querySelectorAll('.answerFormat .requeiredFile');
+    var exportRadioButtons = document.querySelectorAll('.answerFormat');
+
+    for (let exportRadioButton of exportRadioButtons) {
+        exportRadioButton.addEventListener('change', (event) => {
+            var checkedExportFile = Array.prototype.slice.call(exportFileRadioButtons).some(c => c.checked);
+            if (checkedExportFile)
+            {
+                inputFilenameTextBox.hidden = "";
+                inputFilenameLabel.hidden = "";
+            }
+            else
+            {
+                inputFilenameTextBox.hidden = "hidden";
+                inputFilenameLabel.hidden = "hidden";
+            }
+       })
+    }
+    
 </script>
