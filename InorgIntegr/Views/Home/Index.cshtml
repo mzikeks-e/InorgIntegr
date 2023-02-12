@@ -20,16 +20,16 @@
             @Html.CheckBox("IsJsonExport", false)
         </p>
 
-        <p>
+        <p id="choose_db">
             <b>Выберите БД:</b>
             <br/>
             
             <label>PubChem</label>
-            @Html.CheckBox("IsPubChem", true)
+            @Html.CheckBox("IsPubChem", true, new { required = string.Empty })
             <br/>
             
             <label>FoodB</label>
-            @Html.CheckBox("IsFoodB", true)
+            @Html.CheckBox("IsFooDB", true)
             <br/>
             
             <label>BD</label>

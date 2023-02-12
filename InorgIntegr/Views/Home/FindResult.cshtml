@@ -1,63 +1,73 @@
 ﻿@model SearchRequest
 
 @{
-    ViewData["Title"] = "FindResult";
-    var pubChemInfoResponse = await SearchModel.FindPubChem(Model);
-    var FDBInfoResponse = await SearchModel.FindFoodb(Model);
+    ViewData["Title"] = "Результат поиска";
+    var pubChemInfoResponse = Model.IsPubChem ? await SearchModel.FindPubChem(Model) : null;
+    var FdbInfoResponse =  Model.IsFoodB ? await SearchModel.FindFoodb(Model) : null;
+    var DBInfoResponse =  Model.IsDB ? await SearchModel.FindDb(Model) : null;
 }
 
-<h3>Результат поиска:</h3>
+<h4>Результат поиска для вещества <b>@Model.Formula</b></h4>
 
-@if (pubChemInfoResponse.Error != null)
-{   
-    <p>@pubChemInfoResponse.Error</p>
-}
-
-@if (FDBInfoResponse.Error != null)
-{   
-    <p>@FDBInfoResponse.Error</p>
-}
-@if  (pubChemInfoResponse.Error == null)
+@if (pubChemInfoResponse != null)
 {
-    <img src=@pubChemInfoResponse.ImageLink />
-    @foreach (var descr in pubChemInfoResponse.Descriptions)
-    {
-        <p>@descr</p>
+    <h6>Результат поиска в <b>PubChem</b></h6>
+    if (pubChemInfoResponse?.Error != null)
+    {   
+        <p>@pubChemInfoResponse.Error</p>
     }
+    else
+        {
+            <img src=@pubChemInfoResponse?.ImageLink />
+        @foreach (var descr in pubChemInfoResponse.Descriptions)
+        {
+            <p>@descr</p>
+        }
 
-    @foreach (var key in pubChemInfoResponse.Ids.Keys)
-    {
-        <p>
-            <h5>@key:</h5>
-            <div>@pubChemInfoResponse.Ids[key]</div>
-        </p>
-    }
+        @foreach (var key in pubChemInfoResponse.Ids.Keys)
+        {
+            <p>
+                <h5>@key:</h5>
+                <div>@pubChemInfoResponse.Ids[key]</div>
+            </p>
+        }
 
-    @foreach (var key in pubChemInfoResponse.Properties.Keys)
-    {
-        <div>
-            <div>@key: @pubChemInfoResponse.Properties[key]</div>
-        </div>
+        @foreach (var key in pubChemInfoResponse.Properties.Keys)
+        {
+            <div>
+                <div>@key: @pubChemInfoResponse.Properties[key]</div>
+            </div>
+        }
     }
 }
 
-@if  (FDBInfoResponse.Error == null)
+@if (FdbInfoResponse != null)
 {
-    <table>
-      <tr>
-        <th>Name</th>
-        <th>NameSci</th>
-        <th>NcbiId</th>
-      </tr>
-
-    @foreach (var food in FDBInfoResponse.Foods)
-    {
-      <tr>
-        <td>@food.Name</td>
-        <td>@food.NameSci</td>
-        <td>@food.NcbiId</td>
-      </tr>
+    <h6>Результат поиска в <b>FooDB</b></h6>
+    @if (FdbInfoResponse?.Error != null)
+    {   
+        <p>@FdbInfoResponse.Error</p>
     }
 
-    </table>
+    else
+    {
+        <table>
+        
+            <tr>
+                <th>Name</th>
+                <th>NameSci</th>
+                <th>NcbiId</th>
+            </tr>
+
+            @foreach (var food in FdbInfoResponse.Foods)
+            {
+                <tr>
+                <td>@food.Name</td>
+                <td>@food.NameSci</td>
+                <td>@food.NcbiId</td>
+                </tr>
+            }
+
+        </table>
+    }
 }
