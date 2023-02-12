@@ -39,8 +39,12 @@ namespace InorgIntegr.Controllers
                     Response.Headers.Add("content-disposition",
                         $"attachment;filename={Path.ChangeExtension(request.Filename, null)}.json");
                     Response.ContentType = "application/octectstream";
-
-                    return Json(await SearchModel.BuildObjectFromResponses(request));
+                    
+                    var jsonResult = JsonConvert.SerializeObject(await SearchModel.BuildObjectFromResponses(request),
+                        Newtonsoft.Json.Formatting.Indented
+                        );
+                    
+                    return Content(jsonResult);
                 }
 
                 if (request.ExportAs == ExportType.ToXml)
