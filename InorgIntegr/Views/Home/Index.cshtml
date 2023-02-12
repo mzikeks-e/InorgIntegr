@@ -1,6 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
-    //Validation.RequireField("Formula", "Credits is required");
+    ViewData["Title"] = "Поиск";
 }
 
 <div class="text-center">
@@ -29,11 +28,11 @@
             <br/>
             
             <label>FoodB</label>
-            @Html.CheckBox("IsFooDB", true)
+            @Html.CheckBox("IsFooDB", true, new { required = string.Empty })
             <br/>
             
             <label>BD</label>
-            @Html.CheckBox("IsDB", true)
+            @Html.CheckBox("IsDB", true, new { required = string.Empty })
         </p>
 
         <p>
@@ -48,3 +47,16 @@
         </p>
      }
 </div>
+
+<script type="text/javascript">
+    var checkboxes = document.querySelectorAll('#choose_db input[type="checkbox"][required]');
+    for (let checkbox of checkboxes) {
+       checkbox.addEventListener('change', (event) => {
+          // console.log(event.currentTarget.checked));
+          var checkedAny = Array.prototype.slice.call(checkboxes).some(c => c.checked);
+          for (let c of checkboxes) {
+             c.required = !checkedAny;
+          }
+       })
+    }
+</script>
