@@ -1,10 +1,19 @@
-﻿@model SearchRequest
+﻿@using InorgIntegr.Models.DBResponses
+@model SearchRequest
 
 @{
     ViewData["Title"] = "Результат поиска";
-    var pubChemInfoResponse = Model.IsPubChem ? await SearchModel.FindPubChem(Model) : null;
-    var FdbInfoResponse =  Model.IsFoodB ? await SearchModel.FindFoodb(Model) : null;
-    var DBInfoResponse =  Model.IsDB ? await SearchModel.FindDb(Model) : null;
+
+    var pubChemInfoResponseTask = Model.IsPubChem ? SearchModel.FindPubChem(Model) : (Task<PubChemInfoResponse>)Task.CompletedTask;
+    var fdbInfoResponseTask =  Model.IsFoodB ? SearchModel.FindFoodb(Model) : (Task<FoodbDBResponse>)Task.CompletedTask;
+    var dBInfoResponseTask =  Model.IsDB ? SearchModel.FindDb(Model) : (Task<FoodbDBResponse>)Task.CompletedTask;
+
+    await Task.WhenAll(pubChemInfoResponseTask, fdbInfoResponseTask, dBInfoResponseTask);
+
+    var pubChemInfoResponse = pubChemInfoResponseTask.Result;
+    var fdbInfoResponse = fdbInfoResponseTask.Result;
+    var dBInfoResponse = dBInfoResponseTask.Result;
+    
 }
 
 <h4>Результат поиска для вещества <b>@Model.Formula</b></h4>
@@ -41,12 +50,12 @@
     }
 }
 
-@if (FdbInfoResponse != null)
+@if (fdbInfoResponse != null)
 {
     <h6>Результат поиска в <b>FooDB</b></h6>
-    @if (FdbInfoResponse?.Error != null)
+    if (fdbInfoResponse?.Error != null)
     {   
-        <p>@FdbInfoResponse.Error</p>
+        <p>@fdbInfoResponse.Error</p>
     }
 
     else
@@ -59,7 +68,7 @@
                 <th>NcbiId</th>
             </tr>
 
-            @foreach (var food in FdbInfoResponse.Foods)
+            @foreach (var food in fdbInfoResponse.Foods)
             {
                 <tr>
                 <td>@food.Name</td>
