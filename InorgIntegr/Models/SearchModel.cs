@@ -50,11 +50,14 @@ namespace InorgIntegr.Models
         {
             try
             {
-                return await GetInfoByFDBAsync(await GetFDBByFormulaAsync(searchRequest.Formula));
+                var data = await GetInfoByFDBAsync(await GetFDBByFormulaAsync(searchRequest.Formula));
+                if (data == null || data.Foods.Count() == 0)
+                    throw new GettingFDBException();
+                return data;
             }
             catch (FDBGettingInfoException)
             {
-                return new FoodbDBResponse { Error = "Ошибка при получении информации о веществе на FoodDb" };
+                return new FoodbDBResponse { Error = "Ошибка при получении информации о веществе на FoodDb. Проверьте корректность формулы введенного вещества" };
             }
             catch (GettingFDBException)
             {
@@ -63,8 +66,9 @@ namespace InorgIntegr.Models
             catch
             {
                 return new FoodbDBResponse { Error = "непредвиденная ошибка" };
-            }
+            }            
         }
+
         public static async Task<int> GetCidByFormulaAsync(string formula)
         {
             try

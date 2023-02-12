@@ -27,9 +27,7 @@ namespace InorgIntegr.Controllers
         public ActionResult Search(SearchRequest request)
         {
             if (ModelState.IsValid)
-            {
                 Console.Write(request.Formula);
-            }
 
             return View("FindResult", request);
         }

@@ -1,15 +1,50 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    //Validation.RequireField("Formula", "Credits is required");
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
+
     @using (Html.BeginForm("Search", "Home", FormMethod.Post))
     {
         <p>
-            <label>Введите формулу химического вещества</label><br />
-            @Html.TextBox("Formula")
+            <b>Экспорт в:</b>
+            <br/>
+            
+            <label>html</label>
+            @Html.CheckBox("IsHtmlExport", false)
+            <br/>
+            
+            <label>json</label>
+            @Html.CheckBox("IsJsonExport", false)
         </p>
-        <p><input type="submit" value="Поиск"/> </p>
+
+        <p>
+            <b>Выберите БД:</b>
+            <br/>
+            
+            <label>PubChem</label>
+            @Html.CheckBox("IsPubChem", true)
+            <br/>
+            
+            <label>FoodB</label>
+            @Html.CheckBox("IsFoodB", true)
+            <br/>
+            
+            <label>BD</label>
+            @Html.CheckBox("IsDB", true)
+        </p>
+
+        <p>
+            <label>Введите формулу химического вещества</label><br />
+    
+            @Html.TextBox("Formula", string.Empty, new { required = string.Empty })
+
+        </p>
+
+        <p>
+            <input value="Поиск" type="submit"/> 
+        </p>
      }
 </div>
