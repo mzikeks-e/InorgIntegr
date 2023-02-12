@@ -8,15 +8,19 @@
     @using (Html.BeginForm("Search", "Home", FormMethod.Post))
     {
         <p>
-            <b>Экспорт в:</b>
+            <b>Формат ответа:</b>
+            <br/>
+
+            <label>Открыть html</label>
+            @Html.RadioButton("ExportAs", ExportType.OpenHtml, true)
+            <br/>
+
+            <label>Сохранить html</label>
+            @Html.RadioButton("ExportAs", ExportType.ToHtml)
             <br/>
             
-            <label>html</label>
-            @Html.CheckBox("IsHtmlExport", false)
-            <br/>
-            
-            <label>json</label>
-            @Html.CheckBox("IsJsonExport", false)
+            <label>Сохранить json</label>
+            @Html.RadioButton("ExportAs", ExportType.ToJson)
         </p>
 
         <p id="choose_db">
