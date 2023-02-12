@@ -153,7 +153,8 @@ namespace InorgIntegr.Models
                             var info = v?["Information"].FirstOrDefault()?["Value"];
                             var answ = string.Empty;
                             
-                            answ = info?["StringWithMarkup"]?.FirstOrDefault()?["String"]?.ToString() ?? info["Number"]?.ToString();
+                            answ = info?["StringWithMarkup"]?.FirstOrDefault()?["String"]?.ToString() 
+                            ?? info?["Number"]?.FirstOrDefault()?.ToString();
 
                             return answ ?? string.Empty;
                         });
@@ -213,9 +214,9 @@ namespace InorgIntegr.Models
 
         public static async Task<(PubChemInfoResponse, FoodbDBResponse, FoodbDBResponse)> GetResponses(SearchRequest request)
         {
-            var pubChemInfoResponseTask = request.IsPubChem ? FindPubChem(request) : (Task<PubChemInfoResponse>)Task.CompletedTask;
-            var fdbInfoResponseTask = request.IsFoodB ? FindFoodb(request) : (Task<FoodbDBResponse>)Task.CompletedTask;
-            var dBInfoResponseTask = request.IsDB ? FindDb(request) : (Task<FoodbDBResponse>)Task.CompletedTask;
+            var pubChemInfoResponseTask = request.IsPubChem ? FindPubChem(request) : Task.FromResult<PubChemInfoResponse>(null);
+            var fdbInfoResponseTask = request.IsFoodB ? FindFoodb(request) : Task.FromResult<FoodbDBResponse>(null);
+            var dBInfoResponseTask = request.IsDB ? FindDb(request) : Task.FromResult<FoodbDBResponse>(null);
 
             await Task.WhenAll(pubChemInfoResponseTask, fdbInfoResponseTask, dBInfoResponseTask);
 
