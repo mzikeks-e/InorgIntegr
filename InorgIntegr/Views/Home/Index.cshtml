@@ -11,15 +11,15 @@
             <b>Формат ответа:</b>
             <br/>
 
-            <label>Только открыть html</label>
+            <label>Только открыть HTML</label>
             @Html.RadioButton("ExportAs", ExportType.OpenHtml, true)
             <br/>
 
-            <label>Сохранить html</label>
-            @Html.RadioButton("ExportAs", ExportType.ToHtml, new { @class = "requeiredFile"})
+            <label>Сохранить XML</label>
+            @Html.RadioButton("ExportAs", ExportType.ToXml, new { @class = "requeiredFile"})
             <br/>
             
-            <label>Сохранить json</label>
+            <label>Сохранить JSON</label>
             @Html.RadioButton("ExportAs", ExportType.ToJson, new { @class = "requeiredFile"})
         </p>
 
@@ -40,8 +40,8 @@
             @Html.CheckBox("IsFooDB", true, new { required = string.Empty })
             <br/>
             
-            <label>BD</label>
-            @Html.CheckBox("IsDB", true, new { required = string.Empty })
+            <label>VMH</label>
+            @Html.CheckBox("IsVmh", true, new { required = string.Empty })
         </p>
 
         <p>

@@ -1,6 +1,9 @@
 ﻿using InorgIntegr.Models;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Net.Mime;
+using System.Xml;
 
 namespace InorgIntegr.Controllers
 {
@@ -29,14 +32,32 @@ namespace InorgIntegr.Controllers
             if (ModelState.IsValid)
                 Console.Write(request.Formula);
 
-            
-            if (request.ExportAs == ExportType.ToJson)
+            try
             {
-                Response.Headers.Add("content-disposition",
-                    $"attachment;filename={Path.ChangeExtension(request.Filename, null)}.json");
-                Response.ContentType = "application/octectstream";
+                if (request.ExportAs == ExportType.ToJson)
+                {
+                    Response.Headers.Add("content-disposition",
+                        $"attachment;filename={Path.ChangeExtension(request.Filename, null)}.json");
+                    Response.ContentType = "application/octectstream";
 
-                return Json(await SearchModel.BuildJsonFromResponses(request));
+                    return Json(await SearchModel.BuildObjectFromResponses(request));
+                }
+
+                if (request.ExportAs == ExportType.ToXml)
+                {
+                    Response.Headers.Add("content-disposition",
+                        $"attachment;filename={Path.ChangeExtension(request.Filename, null)}.xml");
+                    Response.ContentType = "application/octectstream";
+                    var result = await SearchModel.BuildObjectFromResponses(request);
+                    var jsonResult = JsonConvert.SerializeObject(new {root = result});
+                    var xResult = JsonConvert.DeserializeXNode(jsonResult);
+                    return Content(xResult.ToString());
+                }
+            }    
+            
+            catch 
+            { 
+
             }
 
             return View("FindResult", request);

@@ -3,7 +3,7 @@
     public enum ExportType
     {
         OpenHtml,
-        ToHtml,
+        ToXml,
         ToJson
     }
 
@@ -17,6 +17,6 @@
 
         public bool IsPubChem { get; set; }
         public bool IsFoodB { get; set; }
-        public bool IsDB { get; set; }
+        public bool IsVmh { get; set; }
     }
 }

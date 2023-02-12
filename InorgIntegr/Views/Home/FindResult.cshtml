@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Результат поиска";
 
-    var (pubChemInfoResponse, fdbInfoResponse, dBInfoResponse) = await SearchModel.GetResponses(Model);
+    var (pubChemInfoResponse, fdbInfoResponse, vmhInfoResponse) = await SearchModel.GetResponses(Model);
 }
 
 <h4>Результат поиска для вещества <b>@Model.Formula</b></h4>
@@ -73,3 +73,37 @@
         </table>
     }
 }
+
+<br/>
+
+@if (vmhInfoResponse != null)
+{
+    <h6>Результат поиска в <b>VMH</b></h6>
+    if (vmhInfoResponse?.Error != null)
+    {   
+        <p>@vmhInfoResponse.Error</p>
+    }
+
+    else
+    {
+       <table>
+            <tr>
+                <th>Abbreviation</th>
+                <th>Description</th>
+                <th>Formula</th>
+                <th>Subsystem</th>
+            </tr>
+
+            @foreach (var item in vmhInfoResponse.Items)
+            {
+                <tr>
+                    <td>@item.Abbreviation</td>
+                    <td>@item.Description</td>
+                    <td>@item.Formula</td>
+                    <td>@item.Subsystem</td>
+                </tr>
+            }
+        </table>
+    }
+}
+

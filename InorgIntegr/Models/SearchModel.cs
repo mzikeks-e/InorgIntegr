@@ -1,4 +1,5 @@
 ﻿using InorgIntegr.Models.DBResponses;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -10,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 using System.Xml.XPath;
 
 namespace InorgIntegr.Models
@@ -25,6 +27,8 @@ namespace InorgIntegr.Models
         class GettingFDBException : Exception { }
         
         class FDBGettingInfoException : Exception { }
+
+        class VmhGettingException : Exception { }
 
         public static async Task<PubChemInfoResponse> FindPubChem(SearchRequest searchRequest)
         {
@@ -46,10 +50,41 @@ namespace InorgIntegr.Models
             }
            
         }
-        
-        public static async Task<FoodbDBResponse> FindDb(SearchRequest searchRequest)
+
+        public static async Task<VmhResponse> FindVmh(SearchRequest searchRequest)
         {
-            return null;
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync(
+                    $"https://www.vmh.life/_api/smatrix/?abbreviation={searchRequest.Formula}&format=json&page_size=1000");
+                response.EnsureSuccessStatusCode();
+                string json = await response.Content.ReadAsStringAsync();
+
+                dynamic obj = JsonConvert.DeserializeObject(json);
+                var results = (JArray)obj.results;
+                var items = results.Select(r => new VmhItem
+                {
+                    Abbreviation = r["rxn"]["abbreviation"].ToString(),
+                    Description = r["rxn"]["description"].ToString(),
+                    Formula = r["rxn"]["formula"].ToString(),
+                    Subsystem = r["rxn"]["subsystem"].ToString(),
+                })
+                    .Where(r => r.Formula.ToLower().Contains(searchRequest.Formula.ToLower()))
+                    .GroupBy(r => r.Abbreviation)
+                    .Select(r => r.First())
+                    .ToList();
+                if (items.Any())
+                    return new VmhResponse { Items = items };
+                throw new VmhGettingException();
+            }
+            catch (VmhGettingException)
+            {
+                return new VmhResponse { Error = "Вещество не найдено в БД VMH" };
+            }
+            catch
+            {
+                return new VmhResponse { Error = "Ошибка при поиске вещества на VMH"};
+            }
         }
 
         public static async Task<FoodbDBResponse> FindFoodb(SearchRequest searchRequest)
@@ -212,22 +247,22 @@ namespace InorgIntegr.Models
             }
         }
 
-        public static async Task<(PubChemInfoResponse, FoodbDBResponse, FoodbDBResponse)> GetResponses(SearchRequest request)
+        public static async Task<(PubChemInfoResponse, FoodbDBResponse, VmhResponse)> GetResponses(SearchRequest request)
         {
             var pubChemInfoResponseTask = request.IsPubChem ? FindPubChem(request) : Task.FromResult<PubChemInfoResponse>(null);
             var fdbInfoResponseTask = request.IsFoodB ? FindFoodb(request) : Task.FromResult<FoodbDBResponse>(null);
-            var dBInfoResponseTask = request.IsDB ? FindDb(request) : Task.FromResult<FoodbDBResponse>(null);
+            var VmhInfoResponseTask = request.IsVmh ? FindVmh(request) : Task.FromResult<VmhResponse>(null);
 
-            await Task.WhenAll(pubChemInfoResponseTask, fdbInfoResponseTask, dBInfoResponseTask);
+            await Task.WhenAll(pubChemInfoResponseTask, fdbInfoResponseTask, VmhInfoResponseTask);
 
             var pubChemInfoResponse = pubChemInfoResponseTask.Result;
             var fdbInfoResponse = fdbInfoResponseTask.Result;
-            var dBInfoResponse = dBInfoResponseTask.Result;
+            var VmhInfoResponse = VmhInfoResponseTask.Result;
 
-            return (pubChemInfoResponse, fdbInfoResponse, dBInfoResponse); 
+            return (pubChemInfoResponse, fdbInfoResponse, VmhInfoResponse); 
         }
 
-        public static async Task<object> BuildJsonFromResponses(SearchRequest request)
+        public static async Task<object> BuildObjectFromResponses(SearchRequest request)
         {
             var (pubChemInfoResponse, fdbInfoResponse, dBInfoResponse) = await GetResponses(request);
 
@@ -235,8 +270,28 @@ namespace InorgIntegr.Models
             {
                 PubChemInfo = pubChemInfoResponse,
                 FdbInfo = fdbInfoResponse,
-                DbInfo = dBInfoResponse,
+                VmhInfo = dBInfoResponse,
             };
+        }
+
+        public static async Task<MemoryStream?> BuildXmlFromResponse(SearchRequest request)
+        {
+            XmlSerializer xsSubmit = new XmlSerializer(typeof(object));
+            var obj = await BuildObjectFromResponses(request);
+            var xml = "";
+            using (var sww = new StringWriter())
+            {
+                using (XmlWriter xmlWriter = XmlWriter.Create(sww))
+                {
+                    xsSubmit.Serialize(xmlWriter, obj);
+                    xml = sww.ToString();
+                }
+            }
+            var stream = new MemoryStream();
+            var writer = XmlWriter.Create(stream);
+            writer.WriteRaw(xml);
+            stream.Position = 0;
+            return stream;
         }
     }
 }
